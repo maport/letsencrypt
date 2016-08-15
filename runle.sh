@@ -42,9 +42,11 @@ gen_cert () {
     local domain="$3"
     local testing="$4"
     local cmd=('./letsencrypt-auto' 'certonly' '--no-self-upgrade' '--manual'
-               '--email' "$email" '--domains' "$domain" '--text' '--agree-tos' '--manual-public-ip-logging-ok')
+               '--domains' "$domain" '--text' '--agree-tos' '--manual-public-ip-logging-ok')
     if [ "$email" = 'renew' ]; then
        cmd+=('--keep-until-expiring')
+    else
+       cmd+=('--email' "$email")
     fi
     if [ "$testing" = 'test' ]; then
        cmd+=('--test-cert')
