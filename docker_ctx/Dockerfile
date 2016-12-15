@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN mkdir /code
 
-ARG LE_VERSION=0.5.0
+ARG LE_VERSION=0.9.3
 
 RUN wget --output-document=- "https://github.com/certbot/certbot/archive/v${LE_VERSION}.tar.gz" \
     | tar --extract --gzip --directory '/code' \
