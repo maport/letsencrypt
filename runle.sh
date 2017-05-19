@@ -2,6 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+LOG_DIR="/tmp/le_logs"
 
 
 show_help () {
@@ -32,7 +33,8 @@ build_docker () {
 run_docker () {
     local cfg_dir="$1"
     shift
-    docker run -it --rm -v "$cfg_dir:/etc/letsencrypt:rw" 'codesimple/letsencrypt' "$@"
+    mkdir -p "$LOG_DIR"
+    docker run -it --rm -v "$LOG_DIR:/var/log/letsencrypt:rw" -v "$cfg_dir:/etc/letsencrypt:rw" 'codesimple/letsencrypt' "$@"
 }
 
 
