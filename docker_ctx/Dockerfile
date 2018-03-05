@@ -1,16 +1,12 @@
-FROM ubuntu:trusty-20160503.1
+FROM ubuntu:16.04
 MAINTAINER Michael Porter <mike@codesimple.net>
 
-RUN apt-get update && apt-get install -y \
-    wget
+RUN apt-get update \
+    && apt-get install -y software-properties-common \
+    && add-apt-repository ppa:certbot/certbot \
+    && apt-get update \
+    && apt-get install -y \
+    certbot=0.21.1-1+ubuntu16.04.1+certbot+0.2 \
+    curl
 
-RUN mkdir /code
-
-ARG LE_VERSION=0.14.1
-
-RUN wget --output-document=- "https://github.com/certbot/certbot/archive/v${LE_VERSION}.tar.gz" \
-    | tar --extract --gzip --directory '/code' \
-    && cd "/code/certbot-${LE_VERSION}" \
-    && ./letsencrypt-auto --help
-
-WORKDIR "/code/certbot-${LE_VERSION}" 
+RUN certbot --help
