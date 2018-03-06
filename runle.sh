@@ -96,11 +96,11 @@ gitlab_pages () {
     local cert="$(get_cert "$cfg_dir" "$cfg_domain")"
     local cmd=(
         'curl' '--request' 'PUT' '--header' "PRIVATE-TOKEN: $gitlab_token"
-        '--form' "certificate=$cert"
-        '--form' "key=$key"
+        '--form' "certificate=@$cfg_dir/live/$cfg_domain/fullchain.pem"
+        '--form' "key=@$cfg_dir/live/$cfg_domain/privkey.pem"
         "https://gitlab.com/api/v4/projects/$site_id/pages/domains/$domain"
     )
-    run_docker "$cfg_dir" "${cmd[@]}"
+    "${cmd[@]}"
 }
 
 
