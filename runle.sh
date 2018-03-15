@@ -34,9 +34,14 @@ build_docker () {
 
 run_docker () {
     local cfg_dir="$1"
-    shift
+    local pcfg_dir="$2"
+    shift 2
+    local vols=('-v' "$LOG_DIR:/var/log/letsencrypt:rw" '-v' "$cfg_dir:/etc/letsencrypt:rw")
+    if [ -d "$pcfg_dir" ]; then
+       vols+=('-v' "$pcfg_dir:/tmp/pcfg:ro")
+    fi
     mkdir -p "$LOG_DIR"
-    docker run -it --rm -v "$LOG_DIR:/var/log/letsencrypt:rw" -v "$cfg_dir:/etc/letsencrypt:rw" 'codesimple/letsencrypt' "$@"
+    docker run -it --rm "${vols[@]}" 'codesimple/letsencrypt' "$@"
 }
 
 
@@ -44,8 +49,10 @@ gen_cert () {
     local cfg_dir="$1"
     local email="$2" # or 'renew'
     local domain="$3"
-    local testing="$4"
-    local cmd=('certbot' 'certonly' '--no-self-upgrade' '--manual' '--preferred-challenges' 'dns'
+    local pcfg_dir="$4"
+    local testing="$5"
+    local cmd=('certbot' 'certonly' '--no-self-upgrade'
+               '-a' 'certbot-plugin-gandi:dns' '--certbot-plugin-gandi:dns-credentials' '/tmp/pcfg/gandi_token.cfg'
                '--domains' "$domain" '--text' '--agree-tos' '--manual-public-ip-logging-ok')
     if [ "$email" = 'renew' ]; then
        cmd+=('--keep-until-expiring')
@@ -55,7 +62,7 @@ gen_cert () {
     if [ "$testing" = 'test' ]; then
        cmd+=('--test-cert')
     fi
-    run_docker "$cfg_dir" "${cmd[@]}"
+    run_docker "$cfg_dir" "$pcfg_dir" "${cmd[@]}"
 }
 
 
@@ -64,7 +71,7 @@ get_key () {
     local domain="$2"
     local cmd=('openssl' 'rsa' '-inform' 'pem' '-in' "/etc/letsencrypt/live/$domain/privkey.pem" '-outform' 'pem')
     # AWK is used to skip the 'writing RSA key' message openssl outputs at the start
-    local key=$(run_docker "$cfg_dir" "${cmd[@]}" | awk '/-----/,EOF { print $0 }')
+    local key=$(run_docker "$cfg_dir" "" "${cmd[@]}" | awk '/-----/,EOF { print $0 }')
     printf '%s' "$key"
 }
 
@@ -73,7 +80,7 @@ get_cert () {
     local cfg_dir="$1"
     local domain="$2"
     local cmd=('cat' "/etc/letsencrypt/live/$domain/fullchain.pem")
-    local cert=$(run_docker "$cfg_dir" "${cmd[@]}")
+    local cert=$(run_docker "$cfg_dir" "" "${cmd[@]}")
     printf '%s' "$cert"
 }
 
@@ -121,7 +128,8 @@ case "$1" in
     email="$3"
     domain="$4"
     mkdir -p "$cfg_dir"
-    gen_cert "$cfg_dir" "$email" "$domain" "$testing"
+    pcfg_dir="$(dirname "$cfg_dir")/cfg"
+    gen_cert "$cfg_dir" "$email" "$domain" "$pcfg_dir" "$testing"
     ;;
 
   renew)
@@ -134,7 +142,8 @@ case "$1" in
     cfg_dir="$(readlink -f "$2")"
     domain="$3"
     [ -d "$cfg_dir" ] || error 'State directory does not exist'
-    gen_cert "$cfg_dir" renew "$domain" "$testing"
+    pcfg_dir="$(dirname "$cfg_dir")/cfg"
+    gen_cert "$cfg_dir" renew "$domain" "$pcfg_dir" "$testing"
     ;;
 
   display)
@@ -152,7 +161,7 @@ case "$1" in
     site_id="$4"
     domain="$5"
     [ -d "$cfg_dir" ] || error 'State directory does not exist'
-    gitlab_token="$(cat "$(dirname "$cfg_dir")/gitlab_token.cfg")"
+    gitlab_token="$(cat "$(dirname "$cfg_dir")/cfg/gitlab_token.cfg")"
     gitlab_pages "$cfg_dir" "$cfg_domain" "$site_id" "$domain" "$gitlab_token"
     ;;
 

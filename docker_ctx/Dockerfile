@@ -7,6 +7,10 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y \
     certbot=0.21.1-1+ubuntu16.04.1+certbot+0.2 \
-    curl
+    curl \
+    git \
+    python-pip
+
+RUN pip install 'git+https://gitlab.com/cspublic/certbot-plugin-gandi.git'
 
 RUN certbot --help
