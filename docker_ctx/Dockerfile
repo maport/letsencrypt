@@ -6,7 +6,7 @@ RUN apt-get update \
     && add-apt-repository ppa:certbot/certbot \
     && apt-get update \
     && apt-get install -y \
-    certbot=0.21.1-1+ubuntu16.04.1+certbot+0.2 \
+    certbot=0.26.1-1+ubuntu16.04.1+certbot+2 \
     curl \
     git \
     python-pip
