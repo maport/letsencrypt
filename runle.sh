@@ -3,6 +3,7 @@ set -e
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 LOG_DIR="/tmp/le_logs"
+DKR_SWITCHES='-it'
 
 
 show_help () {
@@ -41,7 +42,7 @@ run_docker () {
        vols+=('-v' "$pcfg_dir:/tmp/pcfg:ro")
     fi
     mkdir -p "$LOG_DIR"
-    docker run -it --rm "${vols[@]}" 'codesimple/letsencrypt' "$@"
+    docker run $DKR_SWITCHES --rm "${vols[@]}" 'codesimple/letsencrypt' "$@"
 }
 
 
@@ -111,9 +112,14 @@ gitlab_pages () {
 }
 
 
-build_docker
+build_docker 1>&2
 
 [ "$#" -gt 0 ] || error 
+
+if [ "$1" = '--auto' ]; then
+    DKR_SWITCHES=''
+    shift
+fi 
 
 case "$1" in
 
@@ -152,6 +158,22 @@ case "$1" in
     domain="$3"
     [ -d "$cfg_dir" ] || error 'State directory does not exist'
     display_pem "$cfg_dir" "$domain"
+    ;;
+
+  display-key)
+    [ "$#" -eq 3 ] || error 'Expected 3 arguments'
+    cfg_dir="$(readlink -f "$2")"
+    domain="$3"
+    [ -d "$cfg_dir" ] || error 'State directory does not exist'
+    get_key "$cfg_dir" "$domain"
+    ;;
+
+  display-cert)
+    [ "$#" -eq 3 ] || error 'Expected 3 arguments'
+    cfg_dir="$(readlink -f "$2")"
+    domain="$3"
+    [ -d "$cfg_dir" ] || error 'State directory does not exist'
+    get_cert "$cfg_dir" "$domain"
     ;;
 
   gitlab)
